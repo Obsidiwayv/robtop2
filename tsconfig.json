@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ESNext",
+        "esModuleInterop": true,
+        "resolveJsonModule": true,
+        "experimentalDecorators": true,
+        "strict": true,
+        "strictPropertyInitialization": true,
+        "outDir": "build"
+    },
+    "exclude": [
+        "node_modules"
+    ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "robtop2",
+  "version": "1.0.0",
+  "description": "A discord bot that makes geometry dash server requests",
+  "main": "build/index.js",
+  "author": "Obsidiwayv, Vox",
+  "license": "Apache-2.0",
+  "private": false,
+  "devDependencies": {
+    "@types/ws": "^8.5.10",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "axios": "^1.6.5",
+    "bucket-queue": "^1.0.1",
+    "discord-api-types": "^0.37.67",
+    "typed-emitter": "^2.1.0",
+    "ws": "^8.16.0"
+  }
+}

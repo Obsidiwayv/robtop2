@@ -1,5 +1,3 @@
-type RobtopLibraryEvents = {
-    'message': (idk: any) => any;
-}
+type RobtopLibraryEvents = {}
 
 export default RobtopLibraryEvents;

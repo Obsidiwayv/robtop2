@@ -1,0 +1,9 @@
+                    // we hit a ratelimit
+                    if (request.status === 429) {
+                        if (request.headers["x-ratelimit-global"]) {
+                            this.globalBlocking = true;
+                            // Typescript is a pain
+                            const typedData = request.data as RESTRateLimit;
+                            setTimeout(() => { this.globalBlocking = false; }, Number(typedData.retry_after));
+                        }
+                    }

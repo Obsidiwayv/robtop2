@@ -14,7 +14,9 @@
     "axios": "^1.6.5",
     "bucket-queue": "^1.0.1",
     "discord-api-types": "^0.37.67",
+    "form-data": "^4.0.0",
     "typed-emitter": "^2.1.0",
-    "ws": "^8.16.0"
+    "ws": "^8.16.0",
+    "yaml": "^2.3.4"
   }
 }

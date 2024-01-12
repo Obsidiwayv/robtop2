@@ -21,9 +21,9 @@ declare module 'bucket-queue' {
 
         interface IBucketAPI {
             _tick(elapsed: number): any;
-            add<T>(fn: (() => T), args: [any]): Promise<T>;
-            start(): IBucketParams;
-            stop(): IBucketParams;
+            add<T>(fn: ((...args: any) => T), args?: [any]): Promise<T>;
+            start(): IBucketAPI;
+            stop(): IBucketAPI;
             getState(key?: (keyof IBucketData)): IBucketData | string;
         }
     }

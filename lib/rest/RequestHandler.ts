@@ -19,25 +19,26 @@ export class RequestHandler {
     public API_URL = "https://discord.com/api";
 
     private ratelimits: { [key: string]: BucketQueue.IBucketAPI } = {};
-    private requestLimits: { [key: string]: number } = {};
     private requestTimeout: { [key: string]: number } = {};
 
     private globalBlocking = false;
 
     public constructor(private client: RobtopClient) { }
 
-    #setRatelimit(route: string, time: number) {
+    #setRatelimit(route: string, params: BucketQueue.IBucketParams = {}) {
         const tick = 10;
-        const bucketData = {
+        const bucketData = Object.assign({
             calls: 100,
-            perInterval: this.requestLimits[route] * time || 60 * 1000,
+            perInterval: 60 * 1000,
             maxConcurrent: Infinity,
-            tickFrequency: this.requestTimeout[route] ? this.requestTimeout[route] + tick : tick
-        };
+            tickFrequency: tick
+        }, params);
 
         if (this.ratelimits[route]) {
             this.ratelimits[route].stop();
-            bucketData.tickFrequency = 10 * time;
+            delete this.ratelimits[route];
+
+            bucketData.tickFrequency = tick + this.requestTimeout[route];
         }
 
         return this.ratelimits[route] = BucketQueue(bucketData);
@@ -47,69 +48,74 @@ export class RequestHandler {
         body.useAuth = true;
 
         if (!this.ratelimits[body.endpoint]) {
-            this.#setRatelimit(body.endpoint, 0).start();
+            this.#setRatelimit(body.endpoint).start();
         }
         const tryRequest = async (): Promise<R | undefined> => {
-            if (!this.globalBlocking) {
-                let headers: { [key: string]: string } = {};
 
-                if (body.useAuth) {
-                    headers["Authorization"] = `Bot ${this.client.config.options.token}`;
+            return new Promise((resolve, reject) => {
+                if (!this.globalBlocking) {
+                    let headers: { [key: string]: string } = {};
+    
+                    if (body.useAuth) {
+                        headers["Authorization"] = `Bot ${this.client.config.options.token}`;
+                    }
+    
+                    headers["User-Agent"] = `DiscordBot (Robtop2, ${this.client.config.options.version})`;
+    
+                    const axiosOptions: AxiosRequestConfig = { 
+                        url: `${this.API_URL}/v${RobtopClient.API_VERSION}${body.endpoint}`,
+                        method: method.toUpperCase(),
+                        headers,
+                    };
+    
+                    if (body.files) {
+                        axiosOptions.data = new FormData();
+                        for (const [i, f] of body.files.entries()) {
+                            if (f.contents && f.name) {
+                                axiosOptions.data.append(`files[${i}]`, f.contents, f.name);
+                            }
+                        }
+                        if (body.json) {
+                            axiosOptions.data.append("payload_json", JSON.stringify(body.json));
+                        }
+                        headers["content-type"] = "multipart/form-data";
+                    } else if (body.json) {
+                        axiosOptions.data = JSON.stringify(body.json);
+                        headers["content-type"] = "application/json";
+                    };
+    
+                    return axios.request<R>(axiosOptions).catch(reason => {
+                        // we hit a ratelimit
+                        if (reason.response.status === 429) {
+                            // Typescript is a pain
+                            const typedData = reason.response.data as RESTRateLimit;
+    
+                            if (reason.response.headers["x-ratelimit-global"]) {
+                                this.globalBlocking = true;
+                                setTimeout(() => { this.globalBlocking = false; }, typedData.retry_after * 3);
+                            } else {
+                                setTimeout(async () => { 
+                                    this.ratelimits[body.endpoint].stop(); 
+                                    reject(typedData.retry_after);
+                                }, 
+                                typedData.retry_after * 3);
+                            }
+                        }
+                    }).then((res) => {
+                        if (!res) return;
+    
+                        this.requestTimeout[body.endpoint] = Math.round(Number(res.headers["x-ratelimit-reset-after"]));
+                        resolve(res.data);
+                    })
                 }
-
-                headers["User-Agent"] = `DiscordBot (Robtop2, ${this.client.config.options.version})`;
-
-                const axiosOptions: AxiosRequestConfig = { 
-                    url: `${this.API_URL}/v${RobtopClient.API_VERSION}${body.endpoint}`,
-                    method: method.toUpperCase(),
-                    headers,
-                };
-
-                if (body.files) {
-                    axiosOptions.data = new FormData();
-                    for (const [i, f] of body.files.entries()) {
-                        if (f.contents && f.name) {
-                            axiosOptions.data.append(`files[${i}]`, f.contents, f.name);
-                        }
-                    }
-                    if (body.json) {
-                        axiosOptions.data.append("payload_json", JSON.stringify(body.json));
-                    }
-                    headers["content-type"] = "multipart/form-data";
-                } else if (body.json) {
-                    axiosOptions.data = JSON.stringify(body.json);
-                    headers["content-type"] = "application/json";
-                };
-
-                return axios.request<R>(axiosOptions).catch(reason => {
-                    // we hit a ratelimit
-                    if (reason.response.status === 429) {
-                        // Typescript is a pain
-                        const typedData = reason.response.data as RESTRateLimit;
-
-                        if (reason.response.headers["x-ratelimit-global"]) {
-                            this.globalBlocking = true;
-                            setTimeout(() => { this.globalBlocking = false; }, typedData.retry_after * 3);
-                        } else {
-                            setTimeout(async () => await tryRequest(), typedData.retry_after * 3);
-                        }
-                    }
-                }).then((res) => {
-                    if (!res) return;
-
-                    if (this.requestTimeout[body.endpoint]) {
-                        this.requestLimits[body.endpoint] = Number(res.headers["x-ratelimit-reset-after"]) * 3
-                            - this.requestTimeout[body.endpoint];
-                        this.#setRatelimit(body.endpoint, Number(res.headers["x-ratelimit-reset-after"]) * 6);
-                    }
-
-                    this.requestTimeout[body.endpoint] = Math.round(Number(res.headers["x-ratelimit-reset-after"]));
-                    return res.data;
-                })
-            }
+            });
         }
 
-        return this.ratelimits[body.endpoint].add(tryRequest);
+        return this.ratelimits[body.endpoint].add(tryRequest)
+            .catch((retry: number) => {
+                setTimeout(() => { this.ratelimits[body.endpoint].start(); tryRequest(); }, retry / 2);
+            })
+            .then(async (data) => { return await data });
     }
 }
 

@@ -83,24 +83,77 @@ proxy-from-env@^1.1.0:
   resolved "https://registry.yarnpkg.com/proxy-from-env/-/proxy-from-env-1.1.0.tgz#e102f16ca355424865755d2c9e8ea4f24d58c3e2"
   integrity sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==
 
-rxjs@^7.5.2:
+rxjs@^7.8.1:
   version "7.8.1"
   resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.8.1.tgz#6f6f3d99ea8044291efd92e7c7fcf562c4057543"
   integrity sha512-AA3TVj+0A2iuIoQkWEK/tqFjBq2j+6PO6Y0zJcvzLAFhEFIO3HL0vls9hWLncZbAAbK0mar7oZ4V079I/qPMxg==
   dependencies:
     tslib "^2.1.0"
 
+ste-core@^3.0.11:
+  version "3.0.11"
+  resolved "https://registry.yarnpkg.com/ste-core/-/ste-core-3.0.11.tgz#a2f0d0cd23a33b7aafd5a6c83e8e209ef3d8fabe"
+  integrity sha512-ivkRENMh0mdGoPlZ4xVcEaC8rXQfTEfvonRw5m8VDKV7kgcbZbaNd1TnKl08wXbcLdT7okSc63HNP8cVhy95zg==
+
+ste-events@^3.0.11:
+  version "3.0.11"
+  resolved "https://registry.yarnpkg.com/ste-events/-/ste-events-3.0.11.tgz#eb8972329486b10a019b23687b34887746fe6bf2"
+  integrity sha512-eahsf3+KARhBOtsdQZvRgzVO/vg8M3wBRbKaQIIFGRIZ2BtAQFr7t0cU94xVW2qh1rA+b4QxrjHc1N9NxKc90w==
+  dependencies:
+    ste-core "^3.0.11"
+
+ste-promise-events@^3.0.11:
+  version "3.0.11"
+  resolved "https://registry.yarnpkg.com/ste-promise-events/-/ste-promise-events-3.0.11.tgz#4a89b481418989d7f2c3ad79d8b89cfba3632ac8"
+  integrity sha512-LTYTsYSpcNlNRFc/vmviHJ38hB8QTjUYoKVcfjhDnGU2vhnnbAqvsjaY0IMRAlHH6kPMysdgNWfr+1I99BWy9Q==
+  dependencies:
+    ste-core "^3.0.11"
+
+ste-promise-signals@^3.0.11:
+  version "3.0.11"
+  resolved "https://registry.yarnpkg.com/ste-promise-signals/-/ste-promise-signals-3.0.11.tgz#d83d81f3193972f1f5e064f39b2befbc0f8d338d"
+  integrity sha512-idDK24bBAeVILzP3/7EEcIoZC1kSYBZE8uW8HassdmPv28vfoME2PQG5GQFWgVGGx88Ag4Nor8qHk88lVQvWhQ==
+  dependencies:
+    ste-core "^3.0.11"
+
+ste-promise-simple-events@^3.0.11:
+  version "3.0.11"
+  resolved "https://registry.yarnpkg.com/ste-promise-simple-events/-/ste-promise-simple-events-3.0.11.tgz#4ddc197308f702e42ff3ee102e3c3227975686af"
+  integrity sha512-xrM7scATyrV/cgwdSlegH+fpWGrRqq6hnykgzTye3M85HnFgAIrYINOut2Hg7b0LHP+vhFQ9x2EMCHpZyT3ktQ==
+  dependencies:
+    ste-core "^3.0.11"
+
+ste-signals@^3.0.11:
+  version "3.0.11"
+  resolved "https://registry.yarnpkg.com/ste-signals/-/ste-signals-3.0.11.tgz#22a9f85e7196515436bb6b235aa0e307e8a75f38"
+  integrity sha512-Thc4Z/jYH5DWKxrbV+EtMX7mJLjtjgD2K/sxcK355uJKklg+vlVhCO1JSOJoHlwRfp+hxANMSZQv2JCxFLnjnw==
+  dependencies:
+    ste-core "^3.0.11"
+
+ste-simple-events@^3.0.11:
+  version "3.0.11"
+  resolved "https://registry.yarnpkg.com/ste-simple-events/-/ste-simple-events-3.0.11.tgz#1963a446f901a3b7157fcda7fc59c9d6f572b764"
+  integrity sha512-PDoQajqiTtJLNDWfJCihzACiTVZyFsXi6hNAVNelNJoNmqj+BaWuhJ/NHaAHxzfSRoMbL+hFgfPqFmxiHhAQSQ==
+  dependencies:
+    ste-core "^3.0.11"
+
+strongly-typed-events@^3.0.11:
+  version "3.0.11"
+  resolved "https://registry.yarnpkg.com/strongly-typed-events/-/strongly-typed-events-3.0.11.tgz#8b156b572ef15a21136cc35383a5d2465048a05c"
+  integrity sha512-k7871A9tGgikRriVCARnb8+tlF/x6kFd8+KidcFcN6EG/3DcOMPnNBfRH712PGXlj2zhmy/VDvOFND1TYp2JdQ==
+  dependencies:
+    ste-core "^3.0.11"
+    ste-events "^3.0.11"
+    ste-promise-events "^3.0.11"
+    ste-promise-signals "^3.0.11"
+    ste-promise-simple-events "^3.0.11"
+    ste-signals "^3.0.11"
+    ste-simple-events "^3.0.11"
+
 tslib@^2.1.0:
   version "2.6.2"
   resolved "https://registry.yarnpkg.com/tslib/-/tslib-2.6.2.tgz#703ac29425e7b37cd6fd456e92404d46d1f3e4ae"
   integrity sha512-AEYxH93jGFPn/a2iVAwW87VuUIkR1FVUKB77NwMF7nBTDkDrrT/Hpt/IrCJ0QXhW27jTBDcf5ZY7w6RiqTMw2Q==
-
-typed-emitter@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/typed-emitter/-/typed-emitter-2.1.0.tgz#ca78e3d8ef1476f228f548d62e04e3d4d3fd77fb"
-  integrity sha512-g/KzbYKbH5C2vPkaXGu8DJlHrGKHLsM25Zg9WuC9pMGfuvT+X25tZQWo5fK1BjBm8+UrVE9LDCvaY0CQk+fXDA==
-  optionalDependencies:
-    rxjs "^7.5.2"
 
 typescript@^5.3.3:
   version "5.3.3"

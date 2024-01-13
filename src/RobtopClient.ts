@@ -1,12 +1,12 @@
 import EventEmitter from "events";
-import TypedEventEmitter from "typed-emitter";
+import { SimpleEventDispatcher } from "strongly-typed-events";
 import RobtopLibraryEvents from "../lib/types/Events";
 import loadYaml, { YamlConfigFile } from "../lib/YamlLoader";
 import { RequestHandler } from "../lib/rest/RequestHandler";
 import ShardingManager from "../lib/shards/ShardingManager";
+import {  APIChannel, APIGuildMember, APITextBasedChannel, APIUser, ChannelType, GatewayGuildCreateDispatchData } from "discord-api-types/v10";
 
-export default class RobtopClient {
-    public events: TypedEventEmitter<RobtopLibraryEvents>;
+export default class RobtopClient extends SimpleEventDispatcher<RobtopLibraryEvents> {
     public config: YamlConfigFile;
 
     public rest: RequestHandler;
@@ -14,11 +14,38 @@ export default class RobtopClient {
     public shards: ShardingManager;
     public shardCount: number = 0;
 
+    public guilds = new Map<string, GatewayGuildCreateDispatchData>();
+    public users = new Map<string, APIUser>();
+    public guildChannelMap: { 
+        [id: string]: { 
+            guildID: string, 
+            data: APITextBasedChannel<ChannelType.GuildText> 
+        } 
+    } = {};
+
     public static API_VERSION = "10";
     public static GATEWAY_VERSION = "10";
 
+    /**
+     * GUILDS: 1 << 0
+     * 
+     * GUILD_MEMBERS: 1 << 1
+     * 
+     * GUILD_PRESENCES: 1 << 8
+     * 
+     * GUILD_MESSAGES: 1 << 9
+     * 
+     * GUILD_MESSAGE_REACTIONS: 1 << 10
+     * 
+     * MESSAGE_CONTENT 1 << 15
+     * 
+     * https://discord.com/developers/docs/topics/gateway#list-of-intents
+     */
+    public static enabledIntents = 1 << 0 | 1 << 1 | 1 << 8 | 1 << 9 | 1 << 10 | 1 << 15 
+
     public constructor() {
-        this.events = new EventEmitter() as TypedEventEmitter<RobtopLibraryEvents>;
+        super();
+        
         this.config = loadYaml();
 
         this.rest = new RequestHandler(this);

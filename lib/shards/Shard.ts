@@ -140,7 +140,7 @@ export default class Shard {
                 }
                 for (let channel of packet.d.channels) {
                     if (channel.type === 2) {
-                        const channel_packet = (packet as APITextBasedChannel<ChannelType.GuildText>);
+                        const channel_packet = (channel as APITextBasedChannel<ChannelType.GuildText>);
                         this.client.guildChannelMap[channel_packet.id] = { 
                             guildID: typedPacket.d.id, 
                             data: channel_packet

@@ -4,6 +4,7 @@ import fs from "fs";
 export interface YamlConfigFile {
     options: {
         token: string;
+        prefix: string;
         version: string;
     };
 }

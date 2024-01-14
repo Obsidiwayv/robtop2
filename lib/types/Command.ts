@@ -1,13 +1,11 @@
 export interface ICommandData {
     // Arrays
     names: string[];
-    usage: string[];
+    usage?: string[];
 
     // Strings
-    description: string;
+    description?: string;
     
     // Booleans
-    developer: boolean;
-
-    // Numbers
+    developer?: boolean;
 }

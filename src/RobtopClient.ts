@@ -4,7 +4,9 @@ import RobtopLibraryEvents from "../lib/types/Events";
 import loadYaml, { YamlConfigFile } from "../lib/YamlLoader";
 import { RequestHandler } from "../lib/rest/RequestHandler";
 import ShardingManager from "../lib/shards/ShardingManager";
-import {  APIChannel, APIGuildMember, APITextBasedChannel, APIUser, ChannelType, GatewayGuildCreateDispatchData } from "discord-api-types/v10";
+import {  APIChannel, APIGuild, APIGuildMember, APITextBasedChannel, APIUser, ChannelType, GatewayGuildCreateDispatchData, GatewayGuildUpdateDispatchData } from "discord-api-types/v10";
+import CommandBase from "../commands/CommandBase";
+import Shard from "../lib/shards/Shard";
 
 export default class RobtopClient extends SimpleEventDispatcher<RobtopLibraryEvents> {
     public config: YamlConfigFile;
@@ -14,7 +16,11 @@ export default class RobtopClient extends SimpleEventDispatcher<RobtopLibraryEve
     public shards: ShardingManager;
     public shardCount: number = 0;
 
-    public guilds = new Map<string, GatewayGuildCreateDispatchData>();
+    public self!: APIUser;
+
+    public commands = new Map<string, CommandBase>();
+
+    public guilds = new Map<string, GatewayGuildCreateDispatchData | GatewayGuildUpdateDispatchData>();
     public users = new Map<string, APIUser>();
     public guildChannelMap: { 
         [id: string]: { 
@@ -51,5 +57,9 @@ export default class RobtopClient extends SimpleEventDispatcher<RobtopLibraryEve
         this.rest = new RequestHandler(this);
 
         this.shards = new ShardingManager(this);
+    }
+
+    get options() {
+        return this.config.options;
     }
 }

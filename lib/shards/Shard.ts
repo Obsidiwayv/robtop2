@@ -4,23 +4,26 @@ import ShardingManager from "./ShardingManager";
 import Logger from "../../src/Logger";
 import AsyncShard from "./AsyncShard";
 
-import { 
-    APITextBasedChannel, 
-    ActivityType, 
-    ChannelType, 
-    GatewayDispatchEvents, 
-    GatewayDispatchPayload, 
-    GatewayHello, 
-    GatewayIdentify, 
-    GatewayResume, 
+import {
+    APITextBasedChannel,
+    ActivityType,
+    ChannelType,
+    GatewayDispatchEvents,
+    GatewayDispatchPayload,
+    GatewayHello,
+    GatewayIdentify,
+    GatewayResume,
     PresenceUpdateStatus
 } from "discord-api-types/v10";
+import MessageHandler from "../../src/events/MessageHandler";
 
 const OpCodes = {
     HEARTBEAT: 1,
     IDENTIFY: 2,
     RESUME: 6,
+    RECONNECT: 7,
     HELLO: 10,
+    HEARTBEAT_ACK: 11
 };
 
 export default class Shard {
@@ -29,7 +32,8 @@ export default class Shard {
     #seq: number = 0;
     #session_id: string = "";
     shardID: number = 0;
-
+    latency: number = 0;
+    last_heartbeat: number = 0
 
     private resume_url?: string;
 
@@ -38,25 +42,25 @@ export default class Shard {
     private asyncShard: AsyncShard = new AsyncShard(this);
 
     constructor(private client: RobtopClient, private manager: ShardingManager) {
-        this.connect(true, false);
+        this.connect();
     }
 
-    public connect(newWS: boolean = true, reconnecting: boolean) {
-        if (newWS) {
-            this.ws = new WebSocket(
-                `${reconnecting ? this.resume_url : this.manager.WS_URL}/?v=${RobtopClient.GATEWAY_VERSION}&encoding=json`
-            );
-        }
+    public connect(reconnecting = false) {
+        this.ws = new WebSocket(
+            `${reconnecting ? this.resume_url : this.manager.WS_URL}/?v=${RobtopClient.GATEWAY_VERSION}&encoding=json`
+        );
         this.ws.on("open", this.identify.bind(this));
         this.ws.on("message", this.onPacket.bind(this));
-        this.ws.on("close", (code, reason) =>
+        this.ws.on("close", (code, reason) => {
+            console.log(code, reason.toString());
             this.asyncShard.handleClose({ code, reason })
                 .then((message) => {
                     if (message) {
                         this.logger.log("info", message);
                     }
                 })
-                .catch((message) => this.logger.log("warning", message)));
+                .catch((message) => this.logger.log("warning", message));
+        });
     }
 
     public disconnect(reconnect: boolean) {
@@ -66,17 +70,17 @@ export default class Shard {
         }
 
         if (reconnect) {
-            if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            if (this.ws) {
                 this.ws.close(4901, "Robtop2: reconnect");
             }
 
 
             if (!this.#seq) {
                 this.logger.log("info", "Reconnecting in 5 seconds...");
-                setTimeout(() => { this.connect(false, true); }, 5000);
+                setTimeout(() => { this.connect(true); }, 5000);
             } else {
                 this.logger.log("info", "Reconnecting for resume...");
-                this.connect(true, true);
+                this.connect(false);
             }
         } else {
             this.ws.terminate();
@@ -107,13 +111,16 @@ export default class Shard {
             this.send({
                 op: OpCodes.HEARTBEAT,
                 d: null
-            })
+            });
+            this.last_heartbeat = Date.now();
         }, interval);
     }
 
     private onPacket(p: RawData) {
         const packet = JSON.parse(p.toString());
-        
+
+        console.log(packet)
+
         switch (packet.op) {
             case OpCodes.HELLO:
                 this.heartbeat((packet as GatewayHello).d.heartbeat_interval);
@@ -122,6 +129,13 @@ export default class Shard {
                     this.resume();
                 }
                 break;
+            case OpCodes.HEARTBEAT_ACK:
+                this.latency = Date.now() - this.last_heartbeat;
+                break;
+            case OpCodes.RECONNECT:
+                this.logger.log("info", "The server requested to reconnect...");
+                this.disconnect(true);
+                break;
         }
         const typedPacket = packet as GatewayDispatchPayload;
 
@@ -129,6 +143,7 @@ export default class Shard {
             case GatewayDispatchEvents.Ready:
                 this.resume_url = typedPacket.d.resume_gateway_url;
                 this.#session_id = typedPacket.d.session_id;
+                this.client.self = typedPacket.d.user;
                 this.logger.log("info", "I am online!");
                 break;
             case GatewayDispatchEvents.GuildCreate:
@@ -138,19 +153,40 @@ export default class Shard {
                         this.client.users.set(member.user.id, member.user);
                     }
                 }
-                for (let channel of packet.d.channels) {
-                    if (channel.type === 2) {
-                        const channel_packet = (channel as APITextBasedChannel<ChannelType.GuildText>);
-                        this.client.guildChannelMap[channel_packet.id] = { 
-                            guildID: typedPacket.d.id, 
-                            data: channel_packet
+                for (let channel of typedPacket.d.channels) {
+                    if (channel.type === ChannelType.GuildText) {
+                        this.client.guildChannelMap[channel.id] = {
+                            guildID: typedPacket.d.id,
+                            data: channel
                         };
                     }
                 }
                 this.client.guilds.set(typedPacket.d.id, typedPacket.d);
                 break;
+            case GatewayDispatchEvents.MessageCreate:
+                new MessageHandler(this.client, typedPacket.d, this).init();
+                break;
+            case GatewayDispatchEvents.GuildDelete:
+                this.client.guilds.delete(typedPacket.d.id);
+                break;
+            case GatewayDispatchEvents.GuildUpdate:
+                this.client.guilds.set(typedPacket.d.id, typedPacket.d);
+                break;
             case GatewayDispatchEvents.ChannelDelete:
-
+                delete this.client.guildChannelMap[typedPacket.d.id];
+                break;
+            case GatewayDispatchEvents.ChannelUpdate:
+                if (typedPacket.d.type === ChannelType.GuildText) {
+                    this.client.guildChannelMap[typedPacket.d.id].data = typedPacket.d;
+                }
+                break;
+            case GatewayDispatchEvents.ChannelCreate:
+                if (typedPacket.d.type === ChannelType.GuildText) {
+                    this.client.guildChannelMap[typedPacket.d.id] = {
+                        guildID: typedPacket.d.guild_id || "",
+                        data: typedPacket.d
+                    }
+                }
         }
     }
 

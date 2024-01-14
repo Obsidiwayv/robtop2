@@ -17,6 +17,7 @@ export type AxiosRequestMethods = "get" | "post" | "put" | "patch" | "delete";
 
 export class RequestHandler {
     public API_URL = "https://discord.com/api";
+    public static BOOMLINGS_URL = "https://www.boomlings.com/database";
 
     private ratelimits: { [key: string]: BucketQueue.IBucketAPI } = {};
     private requestTimeout: { [key: string]: number } = {};
@@ -116,6 +117,17 @@ export class RequestHandler {
                 setTimeout(() => { this.ratelimits[body.endpoint].start(); tryRequest(); }, retry / 2);
             })
             .then(async (data) => { return await data });
+    }
+
+    public static async gdRequest<B extends { [key: string]: any }>(endpoint: string, body: B) {
+        return await axios({
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "User-Agent": " "
+            },
+            data: new URLSearchParams(body)
+        })
     }
 }
 
